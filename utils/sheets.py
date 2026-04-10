@@ -1,4 +1,3 @@
-import json
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import streamlit as st
@@ -10,17 +9,21 @@ SCOPE = [
 
 @st.cache_resource
 def get_client():
-    raw = st.secrets["GOOGLE_SERVICE_ACCOUNT_JSON"]
-    info = json.loads(raw)
+    # Load service account credentials from TOML
+    info = st.secrets["gcp_service_account"]
     creds = ServiceAccountCredentials.from_json_keyfile_dict(info, SCOPE)
     return gspread.authorize(creds)
 
-def load_sheet(sheet_name, tab):
+def load_sheet(tab_name):
+    # Open Google Sheet using spreadsheet_id from TOML
     gc = get_client()
-    ws = gc.open(sheet_name).worksheet(tab)
+    sh = gc.open_by_key(st.secrets["spreadsheet_id"])
+    ws = sh.worksheet(tab_name)
     return ws.get_all_records()
 
-def append_row(sheet_name, tab, row):
+def append_row(tab_name, row_values):
+    # Append a row to a specific tab
     gc = get_client()
-    ws = gc.open(sheet_name).worksheet(tab)
-    ws.append_row(row)
+    sh = gc.open_by_key(st.secrets["spreadsheet_id"])
+    ws = sh.worksheet(tab_name)
+    ws.append_row(row_values)
