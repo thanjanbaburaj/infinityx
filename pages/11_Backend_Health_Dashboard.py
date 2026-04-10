@@ -1,146 +1,105 @@
 import streamlit as st
-import json
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
-import pandas as pd
 import time
 
 st.set_page_config(page_title="Backend Health Dashboard", page_icon="📊", layout="wide")
-
 st.title("📊 Infinity‑X Backend Health Dashboard")
-st.caption("Quick view of JSON key, Google auth, sheet access, and tab health.")
+st.caption("Quick view of service account, Google auth, sheet access, and tab health.")
+
+# ---------------------------------------------------------
+# 1️⃣ CHECK SERVICE ACCOUNT BLOCK
+# ---------------------------------------------------------
+st.subheader("1️⃣ Service Account Status")
+
+service_block = st.secrets.get("gcp_service_account", None)
+
+if not service_block:
+    st.error("❌ No [gcp_service_account] block found in secrets.toml.")
+    st.stop()
+
+st.success("✅ Service account block found in secrets.toml")
+st.write(f"**Client Email:** `{service_block.get('client_email', 'N/A')}`")
+st.write(f"**Project ID:** `{service_block.get('project_id', 'N/A')}`")
+
+# ---------------------------------------------------------
+# 2️⃣ CHECK GOOGLE AUTHENTICATION
+# ---------------------------------------------------------
+st.subheader("2️⃣ Google Authentication")
 
 SCOPE = [
     "https://www.googleapis.com/auth/spreadsheets",
     "https://www.googleapis.com/auth/drive",
 ]
 
-DEFAULT_SHEET_NAME = "Infinity-X Backend"
-EXPECTED_TABS = [
-    "Cold Leads",
+try:
+    creds = ServiceAccountCredentials.from_json_keyfile_dict(service_block, SCOPE)
+    gc = gspread.authorize(creds)
+    st.success("✅ Google authentication successful")
+except Exception as e:
+    st.error("❌ Google authentication failed")
+    st.code(str(e))
+    st.stop()
+
+# ---------------------------------------------------------
+# 3️⃣ CHECK SPREADSHEET ACCESS
+# ---------------------------------------------------------
+st.subheader("3️⃣ Spreadsheet Access")
+
+spreadsheet_id = st.secrets.get("spreadsheet_id", None)
+
+if not spreadsheet_id:
+    st.error("❌ No spreadsheet_id found in secrets.toml.")
+    st.stop()
+
+try:
+    sh = gc.open_by_key(spreadsheet_id)
+    st.success(f"✅ Spreadsheet loaded successfully")
+    st.write(f"**Spreadsheet Title:** `{sh.title}`")
+except Exception as e:
+    st.error("❌ Failed to open spreadsheet using spreadsheet_id")
+    st.code(str(e))
+    st.stop()
+
+# ---------------------------------------------------------
+# 4️⃣ CHECK TAB HEALTH
+# ---------------------------------------------------------
+st.subheader("4️⃣ Worksheet (Tab) Health")
+
+required_tabs = [
+    "Cold_Leads",
     "Clients",
     "Policies",
     "Interactions",
     "Financial_Fact_Find",
-    "Config",
 ]
 
-# ---------- 1. JSON Key Status ----------
-st.subheader("1️⃣ JSON Key Status")
+tab_status = {}
 
-info = st.secrets.get("gcp_service_account", None)
+for tab in required_tabs:
+    try:
+        ws = sh.worksheet(tab)
+        rows = len(ws.get_all_values())
+        tab_status[tab] = f"✅ Exists — {rows} rows"
+    except Exception:
+        tab_status[tab] = "❌ Missing"
 
-if not info:
-    st.error("❌ No [gcp_service_account] block found in Streamlit Secrets.")
-    st.stop()
+for tab, status in tab_status.items():
+    if "❌" in status:
+        st.error(f"{tab}: {status}")
+    else:
+        st.success(f"{tab}: {status}")
 
-st.success("✅ Service account block found in secrets.toml")
-st.write(f"Service account email: `{info.get('client_email', 'N/A')}`")
-
-json_ok = False
-parsed = None
+# ---------------------------------------------------------
+# 5️⃣ LATENCY TEST
+# ---------------------------------------------------------
+st.subheader("5️⃣ Read Latency Test")
 
 try:
-    parsed = json.loads(raw_json)
-    json_ok = True
-    st.success("✅ JSON is valid and correctly formatted.")
+    start = time.time()
+    _ = sh.sheet1.get_all_values()
+    latency = round((time.time() - start) * 1000, 2)
+    st.success(f"✅ Read latency: {latency} ms")
 except Exception as e:
-    st.error("❌ JSON is NOT valid. Fix your Streamlit secret.")
+    st.error("❌ Latency test failed")
     st.code(str(e))
-    st.stop()
-
-# ---------- 2. Authentication Status ----------
-st.subheader("2️⃣ Google Authentication Status")
-
-auth_ok = False
-gc = None
-
-if json_ok:
-    try:
-        creds = ServiceAccountCredentials.from_json_keyfile_dict(parsed, SCOPE)
-        gc = gspread.authorize(creds)
-        auth_ok = True
-        st.success("✅ Authentication successful. Google accepted your credentials.")
-        st.write(f"Service account: `{parsed.get('client_email', 'N/A')}`")
-    except Exception as e:
-        st.error("❌ Authentication failed. Check private key / formatting.")
-        st.code(str(e))
-        st.stop()
-
-# ---------- 3. Sheet Access & Tabs ----------
-st.subheader("3️⃣ Sheet Access & Tabs")
-
-sheet_name = st.text_input("Backend Sheet Name", value=DEFAULT_SHEET_NAME)
-
-sheet_ok = False
-tabs = []
-
-if auth_ok and st.button("Run Sheet Health Check"):
-    with st.spinner("Checking sheet access..."):
-        try:
-            sh = gc.open(sheet_name)
-            sheet_ok = True
-            st.success(f"✅ Successfully accessed Google Sheet: `{sheet_name}`")
-
-            tabs = [ws.title for ws in sh.worksheets()]
-            st.write("**Available Tabs:**", tabs)
-
-            missing_tabs = [t for t in EXPECTED_TABS if t not in tabs]
-            extra_tabs = [t for t in tabs if t not in EXPECTED_TABS]
-
-            if missing_tabs:
-                st.warning(f"⚠️ Missing expected tabs: {missing_tabs}")
-            else:
-                st.success("✅ All expected tabs exist.")
-
-            if extra_tabs:
-                st.info(f"ℹ️ Extra tabs present (not required but okay): {extra_tabs}")
-
-        except Exception as e:
-            st.error("❌ Could not access the sheet. Check name or sharing permissions.")
-            st.code(str(e))
-
-# ---------- 4. Tab Row Counts ----------
-st.subheader("4️⃣ Tab Row Counts & Read Latency")
-
-if sheet_ok:
-    col_main, col_side = st.columns([3, 1])
-    with col_side:
-        run_counts = st.button("Refresh Row Counts")
-
-    if run_counts:
-        results = []
-        for tab in EXPECTED_TABS:
-            try:
-                ws = sh.worksheet(tab)
-                start = time.time()
-                data = ws.get_all_values()
-                elapsed = time.time() - start
-                row_count = max(len(data) - 1, 0)  # minus header
-                results.append({
-                    "Tab": tab,
-                    "Rows": row_count,
-                    "Read Time (s)": round(elapsed, 3),
-                    "Status": "OK" if row_count >= 0 else "Check",
-                })
-            except Exception as e:
-                results.append({
-                    "Tab": tab,
-                    "Rows": "ERR",
-                    "Read Time (s)": "-",
-                    "Status": f"Error: {str(e)[:40]}",
-                })
-
-        df = pd.DataFrame(results)
-        col_main.dataframe(df, use_container_width=True)
-
-        st.caption("Row counts help you see if data is flowing. Read time shows if anything is unusually slow.")
-
-# ---------- 5. Quick Interpretation ----------
-st.subheader("5️⃣ Quick Interpretation Guide")
-
-st.markdown("""
-- ✅ **JSON valid + Auth OK + Sheet OK** → Backend is healthy.
-- ⚠️ **Missing tabs** → Fix sheet structure before using Infinity‑X fully.
-- ❌ **Auth or sheet errors** → Check JSON formatting, service account sharing, or sheet name.
-""")
