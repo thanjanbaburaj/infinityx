@@ -28,11 +28,14 @@ EXPECTED_TABS = [
 # ---------- 1. JSON Key Status ----------
 st.subheader("1️⃣ JSON Key Status")
 
-raw_json = st.secrets.get("GOOGLE_SERVICE_ACCOUNT_JSON", None)
+info = st.secrets.get("gcp_service_account", None)
 
-if not raw_json:
-    st.error("❌ No GOOGLE_SERVICE_ACCOUNT_JSON found in Streamlit Secrets.")
+if not info:
+    st.error("❌ No [gcp_service_account] block found in Streamlit Secrets.")
     st.stop()
+
+st.success("✅ Service account block found in secrets.toml")
+st.write(f"Service account email: `{info.get('client_email', 'N/A')}`")
 
 json_ok = False
 parsed = None
