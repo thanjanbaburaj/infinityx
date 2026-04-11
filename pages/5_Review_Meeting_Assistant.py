@@ -1,5 +1,5 @@
 import streamlit as st
-from utils.sheets_connector import init_sheets, load_clients
+from utils.sheets import init_sheets, load_clients
 from utils.review_framework import ReviewMeetingData, create_review_summary, now_str
 
 st.set_page_config(page_title="Review Meeting Assistant", page_icon="🧾", layout="wide")
