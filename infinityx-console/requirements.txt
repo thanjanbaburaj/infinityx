@@ -1,9 +1,2 @@
 streamlit
-gspread
-oauth2client
-pandas
-jinja2
-
-
-streamlit
 requests
