@@ -17,7 +17,9 @@ with tab_list:
             st.info("No clients yet.")
         else:
             for r in rows:
-                with st.expander(f"{r.get('full_name') or r.get('first_name','')} ({r.get('status','')})"):
+                name = r.get("full_name") or f"{r.get('first_name','')} {r.get('last_name','')}".strip()
+                label = f"{name} — {r.get('status','')}"
+                with st.expander(label):
                     st.write(f"**Client ID:** {r.get('client_id','')}")
                     st.write(f"**Mobile:** {r.get('mobile','')}")
                     st.write(f"**Email:** {r.get('email','')}")
@@ -44,7 +46,7 @@ with tab_add:
     notes = st.text_area("Notes")
 
     if st.button("Create Client", type="primary"):
-        if not first_name and not full_name:
+        if not (full_name or first_name):
             st.warning("At least Full Name or First Name is required.")
         else:
             payload = {
