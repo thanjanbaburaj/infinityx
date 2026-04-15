@@ -1,4 +1,3 @@
-# console/pages/4_Cold_Leads.py
 import streamlit as st
 from shared.sheets import read_rows, create_row
 from shared.utils import iso_to_date_str
@@ -16,14 +15,9 @@ with tab_list:
         if not rows:
             st.info("No cold leads yet.")
         else:
-            rows_sorted = sorted(
-                rows,
-                key=lambda r: str(r.get("LeadScore") or ""),
-                reverse=True,
-            )
+            rows_sorted = sorted(rows, key=lambda r: str(r.get("LeadScore") or ""), reverse=True)
             for r in rows_sorted:
-                label = f"{r.get('FullName','')} — Score: {r.get('LeadScore','')}"
-                with st.expander(label):
+                with st.expander(f"{r.get('FullName','')} — Score: {r.get('LeadScore','')}"):
                     st.write(f"**Lead ID:** {r.get('LeadID','')}")
                     st.write(f"**Mobile:** {r.get('Mobile','')}")
                     st.write(f"**Email:** {r.get('Email','')}")
