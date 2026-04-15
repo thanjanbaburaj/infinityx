@@ -1,51 +1,67 @@
 # console/pages/1_Clients.py
-
-import sys
-from pathlib import Path
-
 import streamlit as st
+from shared.sheets import read_rows, create_row
+from shared.utils import iso_to_date_str
 
-sys.path.append(str(Path(__file__).resolve().parents[1]))
+st.set_page_config(page_title="Clients", page_icon="👥", layout="wide")
 
-from shared import read_records, create_record  # type: ignore
-from console.components.widgets import client_summary_card  # type: ignore
+st.title("Clients")
 
+tab_list, tab_add = st.tabs(["Client List", "Add Client"])
 
-st.set_page_config(page_title="Clients", page_icon="👤", layout="wide")
-
-
-def load_clients():
-    return read_records("CLIENTS")
-
-
-def main():
-    st.title("Clients")
-
-    clients = load_clients()
-    st.write(f"Total clients: {len(clients)}")
-
-    with st.expander("Add New Client"):
-        with st.form("new_client_form"):
-            name = st.text_input("Name")
-            phone = st.text_input("Phone")
-            email = st.text_input("Email")
-            submitted = st.form_submit_button("Create Client")
-            if submitted and name:
-                create_record(
-                    "CLIENTS",
-                    {"Name": name, "Phone": phone, "Email": email},
-                )
-                st.success("Client created. Please refresh to see the update.")
-
-    st.markdown("---")
+with tab_list:
     st.subheader("Client List")
+    try:
+        rows = read_rows("CLIENTS")
+        if not rows:
+            st.info("No clients yet.")
+        else:
+            for r in rows:
+                with st.expander(f"{r.get('full_name') or r.get('first_name','')} ({r.get('status','')})"):
+                    st.write(f"**Client ID:** {r.get('client_id','')}")
+                    st.write(f"**Mobile:** {r.get('mobile','')}")
+                    st.write(f"**Email:** {r.get('email','')}")
+                    st.write(f"**Segment:** {r.get('segment','')}")
+                    st.write(f"**Lead Source:** {r.get('lead_source','')}")
+                    st.write(f"**Lead Score:** {r.get('lead_score','')}")
+                    st.write(f"**Created:** {iso_to_date_str(r.get('created_at'))}")
+                    st.write(f"**Updated:** {iso_to_date_str(r.get('updated_at'))}")
+                    st.write(f"**Notes:** {r.get('notes','')}")
+    except Exception as e:
+        st.error(f"Error loading clients: {e}")
 
-    for c in clients:
-        with st.container():
-            client_summary_card(c)
-            st.markdown("---")
+with tab_add:
+    st.subheader("Add New Client")
+    full_name = st.text_input("Full Name")
+    first_name = st.text_input("First Name")
+    last_name = st.text_input("Last Name")
+    mobile = st.text_input("Mobile")
+    email = st.text_input("Email")
+    status = st.selectbox("Status", ["prospect", "active", "inactive", "lost"])
+    segment = st.selectbox("Segment", ["A", "B", "C", "Unassigned"])
+    lead_source = st.text_input("Lead Source", "manual")
+    lead_score = st.selectbox("Lead Score", ["cold", "warm", "hot"])
+    notes = st.text_area("Notes")
 
-
-if __name__ == "__main__":
-    main()
-
+    if st.button("Create Client", type="primary"):
+        if not first_name and not full_name:
+            st.warning("At least Full Name or First Name is required.")
+        else:
+            payload = {
+                "full_name": full_name or f"{first_name} {last_name}".strip(),
+                "first_name": first_name,
+                "last_name": last_name,
+                "mobile": mobile,
+                "email": email,
+                "status": status,
+                "segment": segment,
+                "lead_source": lead_source,
+                "lead_score": lead_score,
+                "notes": notes,
+            }
+            try:
+                res = create_row("CLIENTS", payload)
+                st.success("Client created.")
+                st.json(res)
+            except Exception as e:
+                st.error(f"Error creating client: {e}")
