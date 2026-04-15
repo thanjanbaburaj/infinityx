@@ -1,4 +1,3 @@
-# console/pages/1_Clients.py
 import streamlit as st
 from shared.sheets import read_rows, create_row
 from shared.utils import iso_to_date_str
@@ -18,8 +17,7 @@ with tab_list:
         else:
             for r in rows:
                 name = r.get("full_name") or f"{r.get('first_name','')} {r.get('last_name','')}".strip()
-                label = f"{name} — {r.get('status','')}"
-                with st.expander(label):
+                with st.expander(f"{name} — {r.get('status','')}"):
                     st.write(f"**Client ID:** {r.get('client_id','')}")
                     st.write(f"**Mobile:** {r.get('mobile','')}")
                     st.write(f"**Email:** {r.get('email','')}")
