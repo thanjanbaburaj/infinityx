@@ -1,4 +1,3 @@
-# console/pages/3_Referrals.py
 import streamlit as st
 from shared.sheets import read_rows, create_row
 from shared.utils import iso_to_date_str
@@ -17,8 +16,7 @@ with tab_list:
             st.info("No referrals yet.")
         else:
             for r in rows:
-                label = f"{r.get('ref_name','')} → {r.get('full_name','')} ({r.get('ref_status','')})"
-                with st.expander(label):
+                with st.expander(f"{r.get('ref_name','')} → {r.get('full_name','')} ({r.get('ref_status','')})"):
                     st.write(f"**Referral ID:** {r.get('referral_id','')}")
                     st.write(f"**Client ID:** {r.get('client_id','')}")
                     st.write(f"**Client Name:** {r.get('full_name','')}")
