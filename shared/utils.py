@@ -1,7 +1,7 @@
 # shared/utils.py
 from datetime import datetime
 
-def iso_to_date_str(value) -> str:
+def iso_to_date_str(value):
     if not value:
         return ""
     try:
