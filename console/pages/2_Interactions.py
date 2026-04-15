@@ -45,7 +45,7 @@ with tab_add:
     summary = st.text_area("Summary")
     outcome = st.text_area("Outcome")
     next_action = st.text_input("Next Action")
-    next_action_date = st.date_input("Next Action Date", value=None, disabled=False)
+    next_action_date = st.date_input("Next Action Date", value=None)
 
     if st.button("Save Interaction", type="primary"):
         payload = {
