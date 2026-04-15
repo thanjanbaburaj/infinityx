@@ -1,4 +1,3 @@
-# console/pages/7_Backend_Health.py
 import streamlit as st
 from shared.sheets import read_rows
 
