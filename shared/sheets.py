@@ -14,7 +14,7 @@ def _post(payload: dict, retries: int = 1):
     last_err = None
     for _ in range(retries):
         try:
-            resp = requests.post(base_url, json=payload, timeout=15)
+            resp = requests.post(base_url, json=payload, timeout=20)
             resp.raise_for_status()
             data = resp.json()
             if not data.get("success", False):
