@@ -1,4 +1,3 @@
-# console/pages/2_Interactions.py
 import streamlit as st
 from shared.sheets import read_rows, create_row
 from shared.utils import iso_to_date_str
@@ -16,14 +15,9 @@ with tab_list:
         if not rows:
             st.info("No interactions logged yet.")
         else:
-            rows_sorted = sorted(
-                rows,
-                key=lambda r: str(r.get("date") or ""),
-                reverse=True,
-            )
+            rows_sorted = sorted(rows, key=lambda r: str(r.get("date") or ""), reverse=True)
             for r in rows_sorted:
-                label = f"{r.get('date','')} — {r.get('type','')} — {r.get('full_name','')}"
-                with st.expander(label):
+                with st.expander(f"{r.get('date','')} — {r.get('type','')} — {r.get('full_name','')}"):
                     st.write(f"**Client ID:** {r.get('client_id','')}")
                     st.write(f"**Channel:** {r.get('channel','')}")
                     st.write(f"**Summary:** {r.get('summary','')}")
