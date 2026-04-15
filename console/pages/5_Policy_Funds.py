@@ -1,4 +1,3 @@
-# console/pages/5_Policy_Funds.py
 import streamlit as st
 from shared.sheets import read_rows
 from shared.utils import iso_to_date_str
@@ -14,23 +13,20 @@ try:
     if not rows:
         st.info("No policy funds yet.")
     else:
-        df_rows = []
         for r in rows:
-            df_rows.append({
-                "FundID": r.get("FundID",""),
-                "PolicyID": r.get("PolicyID",""),
-                "ClientID": r.get("ClientID",""),
-                "FullName": r.get("FullName",""),
-                "Carrier": r.get("Carrier",""),
-                "FundName": r.get("FundName",""),
-                "ISIN": r.get("ISIN",""),
-                "AllocationPercent": r.get("AllocationPercent",""),
-                "UnitsHeld": r.get("UnitsHeld",""),
-                "UnitPrice_Carrier": r.get("UnitPrice_Carrier",""),
-                "UnitPrice_YF": r.get("UnitPrice_YF",""),
-                "CurrentValue": r.get("CurrentValue",""),
-                "LastUpdated": iso_to_date_str(r.get("LastUpdated")),
-            })
-        st.dataframe(df_rows, use_container_width=True)
+            with st.expander(f"{r.get('FundName','')} — {r.get('FullName','')}"):
+                st.write(f"**Fund ID:** {r.get('FundID','')}")
+                st.write(f"**Policy ID:** {r.get('PolicyID','')}")
+                st.write(f"**Client ID:** {r.get('ClientID','')}")
+                st.write(f"**Client Name:** {r.get('FullName','')}")
+                st.write(f"**Carrier:** {r.get('Carrier','')}")
+                st.write(f"**Fund Name:** {r.get('FundName','')}")
+                st.write(f"**ISIN:** {r.get('ISIN','')}")
+                st.write(f"**Allocation %:** {r.get('AllocationPercent','')}")
+                st.write(f"**Units Held:** {r.get('UnitsHeld','')}")
+                st.write(f"**Unit Price (Carrier):** {r.get('UnitPrice_Carrier','')}")
+                st.write(f"**Unit Price (YF):** {r.get('UnitPrice_YF','')}")
+                st.write(f"**Current Value:** {r.get('CurrentValue','')}")
+                st.write(f"**Last Updated:** {iso_to_date_str(r.get('LastUpdated'))}")
 except Exception as e:
     st.error(f"Error loading policy funds: {e}")
